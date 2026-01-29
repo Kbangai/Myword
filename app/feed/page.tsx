@@ -51,7 +51,7 @@ export default function FeedPage() {
                 .select('following_id')
                 .eq('follower_id', user?.id)
 
-            const followingIds = follows?.map(f => f.following_id) || []
+            const followingIds = follows?.map((f: { following_id: string }) => f.following_id) || []
 
             if (followingIds.length === 0) {
                 setPosts([])

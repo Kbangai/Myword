@@ -35,3 +35,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+ENV_DEBUG_SUMMARY.md
+SUPABASE_SETUP.md
+package-lock.json
+.example
