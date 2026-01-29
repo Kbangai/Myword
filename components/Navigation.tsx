@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
 import UserAvatar from './UserAvatar'
+import NotificationBell from './NotificationBell'
 import { useState } from 'react'
 
 export default function Navigation() {
@@ -18,8 +19,10 @@ export default function Navigation() {
 
     const navLinks = [
         { href: '/feed', label: 'Feed', icon: '🏠' },
-        { href: '/create', label: 'Create', icon: '✍️' },
+        { href: '/create', label: 'Post', icon: '✍️' },
         { href: '/my-journal', label: 'My Journal', icon: '📖' },
+        { href: '/people', label: 'People', icon: '👥' },
+        { href: '/summaries', label: 'Summaries', icon: '📊' },
     ]
 
     return (
@@ -64,6 +67,8 @@ export default function Navigation() {
                     ))}
 
                     <ThemeToggle />
+
+                    <NotificationBell />
 
                     {/* User Menu */}
                     <div style={{ position: 'relative' }}>

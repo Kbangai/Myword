@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import UserAvatar from './UserAvatar'
-import { Post } from '@/lib/types'
+import { Post, SERVICE_TYPE_LABELS, ServiceType } from '@/lib/types'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -65,6 +65,11 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
         return date.toLocaleDateString()
     }
 
+    // Get display values - support both new and legacy field names
+    const displayAffirmation = post.my_affirmation || post.my_confession || ''
+    const displayTestimony = post.my_testimony || post.additional_notes || ''
+    const displayTitle = post.preacher || post.session_title || ''
+
     return (
         <div className="card card-hover animate-slide-up">
             {/* Header */}
@@ -97,7 +102,12 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
                     </div>
                 </Link>
 
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {post.service_type && (
+                        <span className="badge badge-primary" style={{ fontSize: '0.75rem' }}>
+                            {SERVICE_TYPE_LABELS[post.service_type as ServiceType] || post.service_type}
+                        </span>
+                    )}
                     {!post.is_public && (
                         <span className="badge badge-secondary">
                             🔒 Private
@@ -106,10 +116,17 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
                 </div>
             </div>
 
-            {/* Session Title */}
-            <h3 style={{ marginBottom: 'var(--space-md)' }}>
-                {post.session_title}
-            </h3>
+            {/* Preacher/Title */}
+            {displayTitle && (
+                <div style={{ marginBottom: 'var(--space-md)' }}>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        Preacher:
+                    </span>
+                    <span style={{ fontWeight: 600, marginLeft: 'var(--space-xs)' }}>
+                        {displayTitle}
+                    </span>
+                </div>
+            )}
 
             {/* Content */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
@@ -133,24 +150,120 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
 
                 <div>
                     <div className="label" style={{ marginBottom: 'var(--space-sm)' }}>
-                        My Confession
+                        My Affirmation
                     </div>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>
-                        {post.my_confession}
+                        {displayAffirmation}
                     </p>
                 </div>
 
-                {post.additional_notes && (
+                {displayTestimony && (
                     <div>
                         <div className="label" style={{ marginBottom: 'var(--space-sm)' }}>
-                            Additional Notes
+                            My Testimony
                         </div>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: 0 }}>
-                            {post.additional_notes}
+                            {displayTestimony}
                         </p>
                     </div>
                 )}
+
+                {/* Prayer Points */}
+                {post.prayer_points && post.prayer_points.length > 0 && (
+                    <div>
+                        <div className="label" style={{ marginBottom: 'var(--space-sm)' }}>
+                            🙏 Prayer Points
+                        </div>
+                        <ul style={{
+                            margin: 0,
+                            paddingLeft: 'var(--space-lg)',
+                            color: 'var(--text-secondary)',
+                        }}>
+                            {post.prayer_points.map((point, index) => (
+                                <li key={index} style={{ marginBottom: 'var(--space-xs)' }}>
+                                    {point}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
+
+            {/* Media Attachments */}
+            {(post.image_url || post.link_url || post.audio_url) && (
+                <div style={{
+                    marginTop: 'var(--space-lg)',
+                    padding: 'var(--space-md)',
+                    background: 'var(--bg-tertiary)',
+                    borderRadius: 'var(--radius-md)',
+                }}>
+                    {/* Image */}
+                    {post.image_url && (
+                        <div style={{ marginBottom: post.link_url || post.audio_url ? 'var(--space-md)' : 0 }}>
+                            <img
+                                src={post.image_url}
+                                alt="Post attachment"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '300px',
+                                    borderRadius: 'var(--radius-md)',
+                                    objectFit: 'cover',
+                                }}
+                            />
+                        </div>
+                    )}
+
+                    {/* Link */}
+                    {post.link_url && (
+                        <div style={{ marginBottom: post.audio_url ? 'var(--space-md)' : 0 }}>
+                            <a
+                                href={post.link_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-sm)',
+                                    color: 'var(--primary-500)',
+                                    textDecoration: 'none',
+                                    fontSize: '0.875rem',
+                                }}
+                            >
+                                <span>🔗</span>
+                                <span style={{
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}>
+                                    {post.link_url}
+                                </span>
+                            </a>
+                        </div>
+                    )}
+
+                    {/* Audio */}
+                    {post.audio_url && (
+                        <div>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-sm)',
+                                marginBottom: 'var(--space-sm)',
+                            }}>
+                                <span>🎤</span>
+                                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                                    Voice Note
+                                </span>
+                            </div>
+                            <audio
+                                src={post.audio_url}
+                                controls
+                                style={{ width: '100%', maxWidth: '300px' }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Actions */}
             <div className="divider" />

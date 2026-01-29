@@ -61,13 +61,17 @@ export default function MyJournalPage() {
     const filteredPosts = posts.filter(post => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
+        // Support both new and legacy field names
+        const preacherOrTitle = (post.preacher || post.session_title || '').toLowerCase()
+        const affirmation = (post.my_affirmation || post.my_confession || '').toLowerCase()
         return (
-            post.session_title.toLowerCase().includes(query) ||
+            preacherOrTitle.includes(query) ||
             post.my_word.toLowerCase().includes(query) ||
             post.my_response.toLowerCase().includes(query) ||
-            post.my_confession.toLowerCase().includes(query)
+            affirmation.includes(query)
         )
     })
+
 
     if (authLoading || !isAuthenticated) {
         return (
