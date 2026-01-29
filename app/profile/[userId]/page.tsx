@@ -11,7 +11,7 @@ import { Post, Profile } from '@/lib/types'
 export default function ProfilePage() {
     const params = useParams()
     const router = useRouter()
-    const { user, isAuthenticated } = useAuth()
+    const { user, isAuthenticated, loading: authLoading } = useAuth()
     const userId = params.userId as string
 
     const [profile, setProfile] = useState<Profile | null>(null)
@@ -24,12 +24,16 @@ export default function ProfilePage() {
     const isOwnProfile = user?.id === userId
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!authLoading && !isAuthenticated) {
             router.push('/auth/login')
-            return
         }
-        loadProfile()
-    }, [userId, isAuthenticated])
+    }, [authLoading, isAuthenticated, router])
+
+    useEffect(() => {
+        if (!authLoading && isAuthenticated) {
+            loadProfile()
+        }
+    }, [authLoading, isAuthenticated, userId])
 
     const loadProfile = async () => {
         setLoading(true)
@@ -119,6 +123,19 @@ export default function ProfilePage() {
             setIsFollowing(true)
             setFollowerCount(prev => prev + 1)
         }
+    }
+
+    if (authLoading || !isAuthenticated) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}>
+                <div className="spinner" style={{ width: '48px', height: '48px' }} />
+            </div>
+        )
     }
 
     if (loading) {

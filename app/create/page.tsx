@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import CharacterCounter from '@/components/CharacterCounter'
@@ -10,7 +10,7 @@ const MAX_CHARS = 400
 
 export default function CreatePage() {
     const router = useRouter()
-    const { user, isAuthenticated } = useAuth()
+    const { user, isAuthenticated, loading: authLoading } = useAuth()
     const [sessionTitle, setSessionTitle] = useState('')
     const [myWord, setMyWord] = useState('')
     const [myResponse, setMyResponse] = useState('')
@@ -20,9 +20,23 @@ export default function CreatePage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
-    if (!isAuthenticated) {
-        router.push('/auth/login')
-        return null
+    useEffect(() => {
+        if (!authLoading && !isAuthenticated) {
+            router.push('/auth/login')
+        }
+    }, [authLoading, isAuthenticated, router])
+
+    if (authLoading || !isAuthenticated) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+            }}>
+                <div className="spinner" style={{ width: '48px', height: '48px' }} />
+            </div>
+        )
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
