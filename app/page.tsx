@@ -57,7 +57,7 @@ export default function HomePage() {
                     maxWidth: '600px',
                     margin: '0 auto var(--space-2xl)',
                 }} className="animate-slide-up">
-                    Capture your spiritual journey. Reflect on God's word. Share your faith with others.
+                    Capture your spiritual journey. Reflect on God&apos;s word. Share your faith with others.
                 </p>
 
                 <div style={{

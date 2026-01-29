@@ -219,7 +219,7 @@ export default function LoginPage() {
                 <div className="divider" />
 
                 <p style={{ textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    Don't have an account?{' '}
+                    Don&apos;t have an account?{' '}
                     <Link href="/auth/signup" style={{ color: 'var(--primary-500)', fontWeight: 600 }}>
                         Sign Up
                     </Link>

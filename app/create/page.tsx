@@ -82,7 +82,7 @@ export default function CreatePage() {
                     <span className="gradient-text">Create New Entry</span>
                 </h1>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-xl)' }}>
-                    Capture your spiritual insights from today's service
+                    Capture your spiritual insights from today&apos;s service
                 </p>
 
                 {error && (
