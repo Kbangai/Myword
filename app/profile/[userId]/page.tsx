@@ -120,7 +120,8 @@ export default function ProfilePage() {
             <style>{`
                 .profile-banner {
                     height: 130px;
-                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+                    background: var(--bg-tertiary);
+                    border-bottom: 1px solid var(--border-color);
                     position: relative;
                 }
                 .profile-card {
