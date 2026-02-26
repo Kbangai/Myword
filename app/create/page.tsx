@@ -534,7 +534,6 @@ export default function CreatePage() {
                 prayer_points: filteredPrayerPoints.length > 0 ? filteredPrayerPoints : null,
                 image_url: uploadedImageUrl || null,
                 link_url: linkUrl || null,
-                audio_url: null,
                 is_public: isPublic,
             })
 
