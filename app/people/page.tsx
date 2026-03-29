@@ -24,6 +24,7 @@ export default function PeoplePage() {
     const [friends, setFriends] = useState<Friend[]>([])
     const [following, setFollowing] = useState<string[]>([])
     const [loading, setLoading] = useState(false)
+    const [sendingRequest, setSendingRequest] = useState<string | null>(null)
 
     useEffect(() => {
         if (!authLoading && !isAuthenticated) router.push('/auth/login')
@@ -99,17 +100,43 @@ export default function PeoplePage() {
         }
     }
 
-    const sendFriendRequest = async (userId: string) => {
+    const sendFriendRequest = async (targetProfile: Profile) => {
+        if (!user || sendingRequest === targetProfile.id) return
+        setSendingRequest(targetProfile.id)
         const supabase = createClient()
-        const { error } = await supabase.from('friend_requests').insert({ from_user_id: user?.id, to_user_id: userId })
-        if (!error) loadFriendRequests()
+        const { data, error } = await supabase
+            .from('friend_requests')
+            .insert({ from_user_id: user.id, to_user_id: targetProfile.id })
+            .select()
+            .single()
+        if (!error && data) {
+            // Optimistically add to sentRequests so button changes to "Sent" immediately
+            setSentRequests(prev => [...prev, {
+                ...data,
+                to_user: { id: targetProfile.id, display_name: targetProfile.display_name, avatar_url: targetProfile.avatar_url }
+            } as FriendRequest])
+        }
+        setSendingRequest(null)
     }
 
-    const respondToRequest = async (requestId: string, accept: boolean) => {
+    const respondToRequest = async (request: FriendRequest, accept: boolean) => {
         const supabase = createClient()
-        await supabase.from('friend_requests').update({ status: accept ? 'accepted' : 'rejected' }).eq('id', requestId)
-        loadFriendRequests()
-        if (accept) loadFriends()
+        await supabase
+            .from('friend_requests')
+            .update({ status: accept ? 'accepted' : 'rejected' })
+            .eq('id', request.id)
+        // Remove from incoming list immediately
+        setFriendRequests(prev => prev.filter(r => r.id !== request.id))
+        if (accept) {
+            // Optimistically add to friends list
+            setFriends(prev => [...prev, {
+                id: crypto.randomUUID(),
+                user_id: user!.id,
+                friend_id: request.from_user_id,
+                created_at: new Date().toISOString(),
+                friend: request.from_user,
+            } as Friend])
+        }
     }
 
     const removeFriend = async (friendId: string) => {
@@ -244,6 +271,7 @@ export default function PeoplePage() {
                 .people-btn-pill:hover { border-color: var(--primary-500); color: var(--primary-500); }
                 .people-btn-pill.primary { background: var(--gradient-primary); color: white; border-color: transparent; }
                 .people-btn-pill.danger:hover { border-color: #ef4444; color: #ef4444; }
+                .people-btn-pill:disabled { opacity: 0.5; cursor: not-allowed; }
                 .people-badge-red {
                     position: absolute;
                     top: 4px; right: 4px;
@@ -413,8 +441,8 @@ export default function PeoplePage() {
                                                 <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>wants to be your friend</p>
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.375rem' }}>
-                                                <button onClick={() => respondToRequest(request.id, true)} className="people-btn-pill primary">Accept</button>
-                                                <button onClick={() => respondToRequest(request.id, false)} className="people-btn-pill">Decline</button>
+                                                <button onClick={() => respondToRequest(request, true)} className="people-btn-pill primary">Accept</button>
+                                                <button onClick={() => respondToRequest(request, false)} className="people-btn-pill">Decline</button>
                                             </div>
                                         </div>
                                     ))}
@@ -533,8 +561,12 @@ export default function PeoplePage() {
                                                 {following.includes(profile.id) ? 'Unfollow' : 'Follow'}
                                             </button>
                                             {!isFriend(profile.id) && !hasSentRequest(profile.id) && (
-                                                <button onClick={() => sendFriendRequest(profile.id)} className="people-btn-pill primary">
-                                                    + Add
+                                                <button
+                                                    onClick={() => sendFriendRequest(profile)}
+                                                    className="people-btn-pill primary"
+                                                    disabled={sendingRequest === profile.id}
+                                                >
+                                                    {sendingRequest === profile.id ? '…' : '+ Add'}
                                                 </button>
                                             )}
                                             {hasSentRequest(profile.id) && (
