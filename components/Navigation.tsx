@@ -6,13 +6,32 @@ import { useAuth } from '@/hooks/useAuth'
 import ThemeToggle from './ThemeToggle'
 import UserAvatar from './UserAvatar'
 import NotificationBell from './NotificationBell'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 
 export default function Navigation() {
     const pathname = usePathname()
     const router = useRouter()
     const { user, isAuthenticated, signOut } = useAuth()
     const [showUserMenu, setShowUserMenu] = useState(false)
+    const [navAvatarUrl, setNavAvatarUrl] = useState<string | null>(null)
+    const [navDisplayName, setNavDisplayName] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (!user) return
+        const supabase = createClient()
+        supabase
+            .from('profiles')
+            .select('avatar_url, display_name')
+            .eq('id', user.id)
+            .single()
+            .then(({ data }: { data: { avatar_url: string | null; display_name: string | null } | null }) => {
+                if (data) {
+                    setNavAvatarUrl(data.avatar_url)
+                    setNavDisplayName(data.display_name)
+                }
+            })
+    }, [user])
 
     if (!isAuthenticated) return null
 
@@ -217,8 +236,8 @@ export default function Navigation() {
                                 }}
                             >
                                 <UserAvatar
-                                    src={user?.user_metadata?.avatar_url}
-                                    name={user?.user_metadata?.display_name || user?.email}
+                                    src={navAvatarUrl}
+                                    name={navDisplayName || user?.email}
                                 />
                             </button>
 
