@@ -164,9 +164,7 @@ export default function Navigation() {
                         </div>
 
                         {/* Theme toggle */}
-                        <div className="nav-icon-btn" style={{ padding: 0, overflow: 'hidden' }}>
-                            <ThemeToggle />
-                        </div>
+                        <ThemeToggle />
 
                         {/* People */}
                         <Link
