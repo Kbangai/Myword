@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, ChangeEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
@@ -16,6 +16,9 @@ export default function SettingsPage() {
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState('')
+    const [uploading, setUploading] = useState(false)
+    const [uploadError, setUploadError] = useState('')
+    const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Form fields
     const [displayName, setDisplayName] = useState('')
@@ -57,6 +60,31 @@ export default function SettingsPage() {
         setLoading(false)
     }
 
+    const handleAvatarUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !user) return
+        setUploading(true)
+        setUploadError('')
+        const supabase = createClient()
+        const ext = file.name.split('.').pop()
+        const path = `${user.id}/avatar.${ext}`
+        const { error: uploadErr } = await supabase.storage
+            .from('avatars')
+            .upload(path, file, { upsert: true })
+        if (uploadErr) {
+            setUploadError(uploadErr.message)
+        } else {
+            const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+            const publicUrl = `${data.publicUrl}?t=${Date.now()}`
+            setAvatarUrl(publicUrl)
+            // Persist immediately so the avatar_url column is updated
+            await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+        }
+        setUploading(false)
+        // Reset file input so same file can be re-selected
+        if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+
     const handleSave = async () => {
         if (!user) return
         setSaving(true)
@@ -96,6 +124,15 @@ export default function SettingsPage() {
     return (
         <>
             <style>{`
+                .avatar-preview-ring:hover .avatar-upload-overlay {
+                    opacity: 1 !important;
+                }
+                .avatar-preview-ring:hover + div .avatar-upload-overlay {
+                    opacity: 1 !important;
+                }
+                [title="Click to change photo"]:hover .avatar-upload-overlay {
+                    opacity: 1 !important;
+                }
                 .settings-section {
                     background: var(--bg-card);
                     border: 1px solid var(--border-color);
@@ -290,6 +327,30 @@ export default function SettingsPage() {
                     border-radius: 50%;
                     display: inline-block;
                 }
+                .profile-action-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 7px 16px;
+                    border-radius: 8px;
+                    font-family: var(--font-primary);
+                    font-size: 0.875rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    border: 1.5px solid var(--border-color);
+                    background: transparent;
+                    color: var(--text-secondary);
+                    text-decoration: none;
+                }
+                .profile-action-btn:hover:not(:disabled) {
+                    border-color: var(--primary-500);
+                    color: var(--primary-500);
+                }
+                .profile-action-btn:disabled {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
                 .error-msg {
                     background: rgba(239,68,68,0.08);
                     border: 1px solid rgba(239,68,68,0.3);
@@ -315,25 +376,64 @@ export default function SettingsPage() {
                     Edit Profile
                 </h2>
 
-                {/* ── Avatar Preview ── */}
+                {/* ── Avatar Upload ── */}
                 <div className="settings-section" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                    <div className="avatar-preview-ring">
-                        <UserAvatar
-                            src={avatarPreview}
-                            name={displayName || user?.email || 'User'}
-                            size="xl"
-                        />
+                    {/* Hidden file input */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarUpload}
+                    />
+
+                    {/* Clickable avatar */}
+                    <div
+                        style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}
+                        onClick={() => !uploading && fileInputRef.current?.click()}
+                        title="Click to change photo"
+                    >
+                        <div className="avatar-preview-ring">
+                            <UserAvatar
+                                src={avatarPreview}
+                                name={displayName || user?.email || 'User'}
+                                size="xl"
+                            />
+                        </div>
+                        {/* Overlay */}
+                        <div style={{
+                            position: 'absolute', inset: 0, borderRadius: '50%',
+                            background: 'rgba(0,0,0,0.45)', display: 'flex',
+                            alignItems: 'center', justifyContent: 'center',
+                            opacity: uploading ? 1 : 0, transition: 'opacity 0.2s',
+                        }} className="avatar-upload-overlay">
+                            {uploading ? (
+                                <div className="spinner" style={{ width: '20px', height: '20px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
+                            ) : (
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                            )}
+                        </div>
                     </div>
+
                     <div style={{ flex: 1 }}>
-                        <div className="settings-label" style={{ marginBottom: '0.4rem' }}>Profile Photo URL</div>
-                        <input
-                            className="settings-input"
-                            type="url"
-                            placeholder="https://example.com/photo.jpg"
-                            value={avatarUrl}
-                            onChange={e => setAvatarUrl(e.target.value)}
-                        />
-                        <p className="settings-hint">Paste a direct image link. Leave blank to use initials.</p>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: '0.35rem' }}>Profile Photo</div>
+                        <p style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', margin: '0 0 0.75rem' }}>
+                            JPG, PNG, WebP or GIF · max 5 MB
+                        </p>
+                        <button
+                            type="button"
+                            className="profile-action-btn"
+                            disabled={uploading}
+                            onClick={() => fileInputRef.current?.click()}
+                            style={{ fontSize: '0.8125rem', padding: '6px 14px' }}
+                        >
+                            {uploading ? 'Uploading…' : avatarPreview ? 'Change Photo' : 'Upload Photo'}
+                        </button>
+                        {uploadError && <p style={{ color: '#ef4444', fontSize: '0.78125rem', marginTop: '0.4rem' }}>{uploadError}</p>}
                     </div>
                 </div>
 
