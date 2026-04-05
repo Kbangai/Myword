@@ -1,6 +1,34 @@
+'use client'
+
 import Link from 'next/link'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
 
 export default function HomePage() {
+    const { isAuthenticated, loading } = useAuth()
+    const router = useRouter()
+
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.push('/feed')
+        }
+    }, [isAuthenticated, loading, router])
+
+    if (loading || isAuthenticated) {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--gradient-primary)',
+            }}>
+                <div className="spinner" style={{ width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
+            </div>
+        )
+    }
+
     return (
         <div style={{
             minHeight: '100vh',
