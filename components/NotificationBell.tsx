@@ -111,6 +111,7 @@ export default function NotificationBell() {
             case 'follow': return '👤'
             case 'like': return '❤️'
             case 'share': return '🔁'
+            case 'comment': return '💬'
             default: return '🔔'
         }
     }

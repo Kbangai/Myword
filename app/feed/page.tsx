@@ -43,7 +43,8 @@ export default function FeedPage() {
                     id,
                     display_name,
                     avatar_url
-                )
+                ),
+                comments:comments(count)
             `)
             .eq('is_public', true)
             .order('created_at', { ascending: false })

@@ -2,8 +2,8 @@
 
 import Link from 'next/link'
 import UserAvatar from './UserAvatar'
-import { Post, SERVICE_TYPE_LABELS, ServiceType } from '@/lib/types'
-import { useState } from 'react'
+import { Post, SERVICE_TYPE_LABELS, ServiceType, Comment } from '@/lib/types'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -20,6 +20,68 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
     const [shareCount] = useState(0)
     const [loading, setLoading] = useState(false)
     const [showComments, setShowComments] = useState(false)
+    const [comments, setComments] = useState<Comment[]>([])
+    const [commentContent, setCommentContent] = useState('')
+    const [submittingComment, setSubmittingComment] = useState(false)
+    const [commentsCount, setCommentsCount] = useState(post.comments_count || 0)
+
+    useEffect(() => {
+        if (showComments) {
+            loadComments()
+        }
+    }, [showComments])
+
+    const loadComments = async () => {
+        const supabase = createClient()
+        const { data } = await supabase
+            .from('comments')
+            .select(`
+                *,
+                profiles:user_id (
+                    id,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .eq('post_id', post.id)
+            .order('created_at', { ascending: true })
+        
+        if (data) {
+            setComments(data as Comment[])
+            setCommentsCount(data.length)
+        }
+    }
+
+    const handleComment = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!user || !commentContent.trim() || submittingComment) return
+
+        setSubmittingComment(true)
+        const supabase = createClient()
+        const { data, error } = await supabase
+            .from('comments')
+            .insert({
+                post_id: post.id,
+                user_id: user.id,
+                content: commentContent.trim()
+            })
+            .select(`
+                *,
+                profiles:user_id (
+                    id,
+                    display_name,
+                    avatar_url
+                )
+            `)
+            .single()
+
+        if (!error && data) {
+            setComments(prev => [...prev, data as Comment])
+            setCommentContent('')
+            setCommentsCount(prev => prev + 1)
+        }
+        setSubmittingComment(false)
+    }
 
     const isOwnPost = user?.id === post.user_id
 
@@ -417,7 +479,7 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
                     {/* Spacer */}
                     <div style={{ flex: 1 }} />
 
-                    {/* Comments stub */}
+                    {/* Comments toggle */}
                     <button
                         className="post-action-btn"
                         onClick={() => setShowComments(v => !v)}
@@ -426,9 +488,125 @@ export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                         </svg>
-                        <span>0 Comments</span>
+                        <span>{commentsCount} {commentsCount === 1 ? 'Comment' : 'Comments'}</span>
                     </button>
                 </div>
+
+                {/* ── Comments Section ── */}
+                {showComments && (
+                    <div className="animate-slide-down" style={{ marginTop: '0.875rem' }}>
+                        {/* Comment Form */}
+                        {user && (
+                            <form onSubmit={handleComment} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                                <div style={{ flex: 1, position: 'relative' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="Add a comment..."
+                                        value={commentContent}
+                                        onChange={(e) => setCommentContent(e.target.value)}
+                                        disabled={submittingComment}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem 0.75rem',
+                                            paddingRight: '2.5rem',
+                                            borderRadius: '20px',
+                                            border: '1.5px solid var(--border-color)',
+                                            background: 'var(--bg-tertiary)',
+                                            fontSize: '0.875rem',
+                                            color: 'var(--text-primary)',
+                                            outline: 'none',
+                                            transition: 'border-color 0.2s',
+                                        }}
+                                        onFocus={(e) => e.target.style.borderColor = 'var(--primary-500)'}
+                                        onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!commentContent.trim() || submittingComment}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '4px',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'var(--gradient-primary)',
+                                            border: 'none',
+                                            borderRadius: '50%',
+                                            width: '28px',
+                                            height: '28px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            color: 'white',
+                                            cursor: 'pointer',
+                                            opacity: commentContent.trim() ? 1 : 0.5,
+                                            transition: 'opacity 0.2s',
+                                        }}
+                                    >
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="22" y1="2" x2="11" y2="13" />
+                                            <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {/* Comments List */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+                            {comments.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.875rem', margin: '1rem 0' }}>
+                                    No comments yet. Be the first to share your thoughts!
+                                </p>
+                            ) : (
+                                comments.map((comment) => (
+                                    <div key={comment.id} style={{ display: 'flex', gap: '0.625rem', alignItems: 'flex-start' }}>
+                                        <Link href={`/profile/${comment.profiles?.id}`}>
+                                            <UserAvatar
+                                                src={comment.profiles?.avatar_url}
+                                                name={comment.profiles?.display_name || 'User'}
+                                                size="sm"
+                                            />
+                                        </Link>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                background: 'var(--bg-tertiary)',
+                                                padding: '0.5rem 0.75rem',
+                                                borderRadius: '12px',
+                                                borderTopLeftRadius: 0,
+                                            }}>
+                                                <Link
+                                                    href={`/profile/${comment.profiles?.id}`}
+                                                    style={{
+                                                        fontSize: '0.8125rem',
+                                                        fontWeight: 700,
+                                                        color: 'var(--text-primary)',
+                                                        textDecoration: 'none',
+                                                        display: 'block',
+                                                        marginBottom: '2px',
+                                                    }}
+                                                >
+                                                    {comment.profiles?.display_name || 'Anonymous'}
+                                                </Link>
+                                                <p style={{
+                                                    margin: 0,
+                                                    fontSize: '0.875rem',
+                                                    color: 'var(--text-secondary)',
+                                                    lineHeight: 1.45,
+                                                    wordBreak: 'break-word',
+                                                }}>
+                                                    {comment.content}
+                                                </p>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', paddingLeft: '4px' }}>
+                                                {new Date(comment.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     )

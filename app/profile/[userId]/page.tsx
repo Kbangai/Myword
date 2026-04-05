@@ -48,7 +48,7 @@ export default function ProfilePage() {
 
         let query = supabase
             .from('posts')
-            .select(`*, profiles:user_id (id, display_name, avatar_url)`)
+            .select(`*, profiles:user_id (id, display_name, avatar_url), comments:comments(count)`)
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
         if (!isOwnProfile) query = query.eq('is_public', true)

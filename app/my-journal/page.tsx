@@ -38,7 +38,8 @@ export default function MyJournalPage() {
           id,
           display_name,
           avatar_url
-        )
+        ),
+        comments:comments(count)
       `)
             .eq('user_id', user?.id)
             .order('created_at', { ascending: false })

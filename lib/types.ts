@@ -28,6 +28,7 @@ export interface Post {
     is_public: boolean
     created_at: string
     updated_at: string
+    comments_count?: number
     profiles?: {
         id: string
         display_name: string | null
@@ -46,7 +47,7 @@ export interface Profile {
     created_at: string
 }
 
-export type NotificationType = 'friend_request' | 'friend_accepted' | 'friend_rejected' | 'follow' | 'like' | 'share'
+export type NotificationType = 'friend_request' | 'friend_accepted' | 'friend_rejected' | 'follow' | 'like' | 'share' | 'comment'
 
 export interface Notification {
     id: string
@@ -92,6 +93,20 @@ export interface Friend {
     friend_id: string
     created_at: string
     friend?: {
+        id: string
+        display_name: string | null
+        avatar_url: string | null
+    }
+}
+
+export interface Comment {
+    id: string
+    post_id: string
+    user_id: string
+    content: string
+    created_at: string
+    updated_at: string
+    profiles?: {
         id: string
         display_name: string | null
         avatar_url: string | null
