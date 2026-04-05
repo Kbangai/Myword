@@ -107,6 +107,7 @@ export default function NotificationBell() {
         switch (type) {
             case 'friend_request': return '👋'
             case 'friend_accepted': return '🤝'
+            case 'friend_rejected': return '❌'
             case 'follow': return '👤'
             case 'like': return '❤️'
             default: return '🔔'
