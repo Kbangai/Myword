@@ -46,7 +46,7 @@ export interface Profile {
     created_at: string
 }
 
-export type NotificationType = 'friend_request' | 'friend_accepted' | 'friend_rejected' | 'follow' | 'like'
+export type NotificationType = 'friend_request' | 'friend_accepted' | 'friend_rejected' | 'follow' | 'like' | 'share'
 
 export interface Notification {
     id: string

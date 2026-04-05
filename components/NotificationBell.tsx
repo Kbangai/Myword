@@ -110,6 +110,7 @@ export default function NotificationBell() {
             case 'friend_rejected': return '❌'
             case 'follow': return '👤'
             case 'like': return '❤️'
+            case 'share': return '🔁'
             default: return '🔔'
         }
     }
