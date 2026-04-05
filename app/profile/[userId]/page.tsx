@@ -48,13 +48,21 @@ export default function ProfilePage() {
 
         let query = supabase
             .from('posts')
-            .select(`*, profiles:user_id (id, display_name, avatar_url), comments:comments(count)`)
+            .select(`*, profiles:user_id (id, display_name, avatar_url), comments:comments(count), likes:likes(count), shares:post_shares(count)`)
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
         if (!isOwnProfile) query = query.eq('is_public', true)
 
         const { data: postsData } = await query
-        if (postsData) setPosts(postsData as Post[])
+        if (postsData) {
+            const formattedPosts = (postsData as any[]).map(post => ({
+                ...post,
+                comments_count: post.comments?.[0]?.count || 0,
+                likes_count: post.likes?.[0]?.count || 0,
+                shares_count: post.shares?.[0]?.count || 0
+            }))
+            setPosts(formattedPosts as Post[])
+        }
 
         if (!isOwnProfile && user) {
             const { data: followData } = await supabase

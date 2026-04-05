@@ -29,6 +29,8 @@ export interface Post {
     created_at: string
     updated_at: string
     comments_count?: number
+    likes_count?: number
+    shares_count?: number
     profiles?: {
         id: string
         display_name: string | null

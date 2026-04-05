@@ -39,13 +39,21 @@ export default function MyJournalPage() {
           display_name,
           avatar_url
         ),
-        comments:comments(count)
+        comments:comments(count),
+        likes:likes(count),
+        shares:post_shares(count)
       `)
             .eq('user_id', user?.id)
             .order('created_at', { ascending: false })
 
         if (!error && data) {
-            setPosts(data as Post[])
+            const formattedPosts = (data as any[]).map(post => ({
+                ...post,
+                comments_count: post.comments?.[0]?.count || 0,
+                likes_count: post.likes?.[0]?.count || 0,
+                shares_count: post.shares?.[0]?.count || 0
+            }))
+            setPosts(formattedPosts as Post[])
         }
 
         setLoading(false)

@@ -16,14 +16,35 @@ interface PostCardProps {
 export default function PostCard({ post, onLike, onDelete }: PostCardProps) {
     const { user } = useAuth()
     const [liked, setLiked] = useState(false)
-    const [likeCount, setLikeCount] = useState(0)
-    const [shareCount] = useState(0)
+    const [likeCount, setLikeCount] = useState(post.likes_count || 0)
+    const [shareCount, setShareCount] = useState(post.shares_count || 0)
     const [loading, setLoading] = useState(false)
     const [showComments, setShowComments] = useState(false)
     const [comments, setComments] = useState<Comment[]>([])
     const [commentContent, setCommentContent] = useState('')
     const [submittingComment, setSubmittingComment] = useState(false)
     const [commentsCount, setCommentsCount] = useState(post.comments_count || 0)
+
+    useEffect(() => {
+        if (user) {
+            checkIfLiked()
+        }
+    }, [user, post.id])
+
+    const checkIfLiked = async () => {
+        if (!user) return
+        const supabase = createClient()
+        const { data } = await supabase
+            .from('likes')
+            .select('id')
+            .eq('post_id', post.id)
+            .eq('user_id', user.id)
+            .single()
+        
+        if (data) {
+            setLiked(true)
+        }
+    }
 
     useEffect(() => {
         if (showComments) {

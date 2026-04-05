@@ -44,7 +44,9 @@ export default function FeedPage() {
                     display_name,
                     avatar_url
                 ),
-                comments:comments(count)
+                comments:comments(count),
+                likes:likes(count),
+                shares:post_shares(count)
             `)
             .eq('is_public', true)
             .order('created_at', { ascending: false })
@@ -76,7 +78,13 @@ export default function FeedPage() {
         const { data, error } = await query
 
         if (!error && data) {
-            setPosts(data as Post[])
+            const formattedPosts = (data as any[]).map(post => ({
+                ...post,
+                comments_count: post.comments?.[0]?.count || 0,
+                likes_count: post.likes?.[0]?.count || 0,
+                shares_count: post.shares?.[0]?.count || 0
+            }))
+            setPosts(formattedPosts as Post[])
         }
 
         setLoading(false)
